@@ -75,6 +75,7 @@ library:
   - text
   - relude
   - colourista
+  - containers
   source-dirs: src
 
 executables:
@@ -86,6 +87,7 @@ executables:
     - lha
     - relude
     - text
+    - containers
     ghc-options:
     - -rtsopts
     - -threaded
