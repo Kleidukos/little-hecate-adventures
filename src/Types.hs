@@ -2,35 +2,37 @@ module Types (
   module Types
   ) where
 
-import qualified Data.Map as Map
-
 type Tag         = Text
 type Description = Text
-type Location    = Map Tag Description
 
 type StateIO m = (MonadState AppState m, MonadIO m)
 
 data Action = Go Text
-            | Quit
+            | Abort
             | Look
             deriving (Show, Eq)
 
-data AppState = AppState { currentLocation :: (Tag, Description)
-                         , locations       :: Location
+data AppState = AppState { currentLocation :: Object
+                         , objects         :: [Object]
                          } deriving (Eq, Show)
 
-initialState :: AppState
-initialState = AppState defaultLoc locations
-  where
-    defaultLoc = ("the doorstep", "doorstep")
-    locations  = Map.fromList [ ("field", "an open field")
-                              , ("cave", "a little cave")
-                              , ("doorstep", "the doorstep")
-                              ]
+data Object = Object { tag         :: Tag
+                     , description :: Text
+                     , location    :: Maybe Object
+                     } deriving (Eq, Show)
 
-parse :: [Text] -> Action
-parse content = case content of
-                ["go", tag] -> Go tag
-                ["look"]    -> Look
-                _           -> Quit
+initialState :: AppState
+initialState = AppState defaultLoc objects
+  where
+    defaultLoc = Object "doorstep" "the doorstep" Nothing
+    loc0 = Object "field" "an open field" Nothing
+    loc1 = Object "cave" "a little cave" Nothing
+    loc2 = Object "doorstep" "the doorstep" Nothing
+    objects  =  [ loc0
+                , loc1
+                , loc2
+                , Object "silver" "a silver coin" (Just loc0)
+                , Object "gold" "a gold coin" (Just loc1)
+                , Object "guard" "a burly guard" (Just loc0)
+                ]
 
