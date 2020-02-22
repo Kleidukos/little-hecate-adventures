@@ -6,6 +6,7 @@ module Actions (
 import           Data.Maybe         (fromJust)
 import           Text.Pretty.Simple (pPrint)
 
+import           Prelude            hiding (state)
 import           Types
 
 parse :: [Text] -> Action
@@ -75,15 +76,22 @@ setLocation object to = do
   AppState{..} <- get
   let tagName   = tag object
   let newObject = object{location=(Just to)}
-  let newListOfObjects = insertObject newObject $ deleteObject tagName objects
-  modify' (\state -> state { objects = newListOfObjects })
+  deleteObject tagName
+  insertObject newObject
+  pure ()
 
-deleteObject :: Tag -> [Object] -> [Object]
-deleteObject tagName objectList =
-  filter (\obj -> tag obj /= tagName) objectList
+deleteObject :: StateIO m => Tag -> m ()
+deleteObject tagName = do
+  newState <- gets (\state ->
+                      filter (\obj -> tag obj /= tagName) (objects state))
+  put AppState{objects=newState}
+  pure ()
 
-insertObject :: Object -> [Object] -> [Object]
-insertObject object listOfObjects = object : listOfObjects
+insertObject :: StateIO m => Object -> m ()
+insertObject object = do
+  objects <- gets objects
+  put $ AppState{objects=object : objects}
+  pure ()
 
 getByTag :: StateIO m => Tag -> m (Maybe Object)
 getByTag tagName = listToMaybe
