@@ -9,12 +9,11 @@ import           Text.Pretty.Simple (pPrint)
 import           Types
 
 parse :: [Text] -> Action
-parse content = case content of
-                ["go", tag]  -> Go tag
-                ["look"]     -> Look
-                ["get", tag] -> Get tag
-                ["dump"]     -> Dump
-                _            -> Abort
+parse ["go", tag]  = Go tag
+parse ["look"]     = Look
+parse ["get", tag] = Get tag
+parse ["dump"]     = Dump
+parse _            = Abort
 
 process :: StateIO m => Action -> m [Text]
 process (Dump)  = get >>= pPrint >> pure []
