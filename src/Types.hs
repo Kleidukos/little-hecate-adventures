@@ -10,6 +10,9 @@ type StateIO m = (MonadState AppState m, MonadIO m)
 data Action = Go Text
             | Abort
             | Look
+            | Get Text
+            | Drop Text
+            | Dump
             deriving (Show, Eq)
 
 data AppState = AppState { objects :: [Object]
@@ -35,6 +38,7 @@ initialState = AppState objects
                 , Object "silver" "a silver coin" (Just loc0)
                 , Object "gold" "a gold coin" (Just loc1)
                 , Object "guard" "a burly guard" (Just loc0)
+                , Object "key" "a rusty key" (Just defaultLoc)
                 , player
                 ]
 

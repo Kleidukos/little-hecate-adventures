@@ -3,17 +3,22 @@ module Actions (
   ) where
 
 
+import           Data.Maybe         (fromJust)
+import           Text.Pretty.Simple (pPrint)
+
 import           Types
-import Data.Maybe (fromJust)
 
 parse :: [Text] -> Action
 parse content = case content of
-                ["go", tag] -> Go tag
-                ["look"]    -> Look
-                _           -> Abort
+                ["go", tag]  -> Go tag
+                ["look"]     -> Look
+                ["get", tag] -> Get tag
+                ["dump"]     -> Dump
+                _            -> Abort
 
 process :: StateIO m => Action -> m [Text]
-process (Abort)       = pure [ "I don't know what you mean…" ]
+process (Dump)  = get >>= pPrint >> pure []
+process (Abort) = pure [ "I don't know what you mean…" ]
 process (Go tagName) = do
     location <- getByTag tagName
     case location of
@@ -29,22 +34,19 @@ process (Go tagName) = do
           process Abort
 process (Look)     = do
   Object{tag=tag, description=currentLocationDescription} <- getCurrentLocation
-  objects <- listContent tag
+  objects <- listObjectsAt tag
   case objects of
-    [] -> do
-      putTextLn "Nothing here…"
-      pure $ []
+    [] -> pure ["Nothing here…"]
     _  -> do
       let objectTexts = fmap (\obj -> "You see " <> description obj) objects
       pure $ ["You are in " <> currentLocationDescription] ++ objectTexts
-
-
+process (Get tagName) = getItem tagName
 --------------
 -- Location --
 --------------
 
-listContent :: StateIO m => Tag -> m [Object]
-listContent tagName = do
+listObjectsAt :: StateIO m => Tag -> m [Object]
+listObjectsAt tagName = do
   place <- getByTag tagName
   case place of
       Nothing    -> pure []
@@ -58,15 +60,15 @@ setCurrentLocation location = do
   pure ()
 
 getCurrentLocation :: StateIO m => m Object
-getCurrentLocation = do 
+getCurrentLocation = do
   myself <- fromJust <$> getByTag "yourself"
-  pure $ fromJust $ location myself 
+  pure $ fromJust $ location myself
 
 setLocation :: StateIO m => Object -> Location -> m ()
-setLocation object newLocation = do
+setLocation object to = do
   AppState{..} <- get
   let tagName   = tag object
-  let newObject = object{location=(Just newLocation)}
+  let newObject = object{location=(Just to)}
   let newListOfObjects = insertObject newObject $ deleteObject tagName objects
   modify' (\state -> state { objects = newListOfObjects })
 
@@ -85,16 +87,16 @@ getByTag tagName = listToMaybe
 -- Inventory --
 ---------------
 
-getItem :: StateIO m => Tag -> m ()
-getItem tagName = undefined
+getItem :: StateIO m => Tag -> m [Text]
+getItem tagName = do
+  object <- getByTag tagName
+  case object of
+    Nothing  -> pure ["I don't understand what item you mean."]
+    Just obj -> do
+      myself <- fromJust <$> getByTag "yourself"
+      moveObject obj (fromJust $ location myself)
 
-moveObject :: StateIO m => Object -> Object -> Maybe Object -> m [Text]
-moveObject object from to = do
-  case (Just from) /= location object of
-    True  -> pure ["You cannot do that."]
-    False ->
-      case to of
-        Nothing  -> pure ["There is nobody here to give that to."]
-        Just newLoc -> do
-          setLocation object newLoc
-          pure ["OK."]
+moveObject :: StateIO m => Object -> Object -> m [Text]
+moveObject object to = do
+  setLocation object to
+  pure ["OK."]
