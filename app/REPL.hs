@@ -13,5 +13,3 @@ repl = do
   res <- process result
   traverse_ putTextLn res
   repl
-  pure ()
-
