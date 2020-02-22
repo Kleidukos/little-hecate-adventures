@@ -76,6 +76,7 @@ library:
   - relude
   - colourista
   - containers
+  - pretty-simple
   source-dirs: src
 
 executables:
