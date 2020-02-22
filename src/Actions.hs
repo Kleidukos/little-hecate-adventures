@@ -16,22 +16,33 @@ parse ["dump"]     = Dump
 parse _            = Abort
 
 process :: StateIO m => Action -> m [Text]
-process (Dump)  = get >>= pPrint >> pure []
-process (Abort) = pure [ "I don't know what you mean…" ]
-process (Go tagName) = do
-    location <- getByTag tagName
-    case location of
-        Just loc -> do
-          currentLoc <- getCurrentLocation
-          if currentLoc == loc
-          then
-            pure [ "You are already there." ]
-          else do
-            setCurrentLocation loc
-            process Look
-        Nothing ->
-          process Abort
-process (Look)     = do
+process (Dump)        = get >>= pPrint >> pure []
+process (Abort)       = pure [ "I don't know what you mean…" ]
+process (Go tagName)  = movePlayer tagName
+process (Look)        = lookAround
+process (Get tagName) = getItem tagName
+
+--------------
+-- Location --
+--------------
+
+movePlayer :: StateIO m => Tag -> m [Text]
+movePlayer tagName = do
+  location <- getByTag tagName
+  case location of
+      Just loc -> do
+        currentLoc <- getCurrentLocation
+        if currentLoc == loc
+        then
+          pure [ "You are already there." ]
+        else do
+          setCurrentLocation loc
+          process Look
+      Nothing ->
+        process Abort
+
+lookAround :: StateIO m => m [Text]
+lookAround = do
   Object{tag=tag, description=currentLocationDescription} <- getCurrentLocation
   objects <- listObjectsAt tag
   case objects of
@@ -39,10 +50,6 @@ process (Look)     = do
     _  -> do
       let objectTexts = fmap (\obj -> "You see " <> description obj) objects
       pure $ ["You are in " <> currentLocationDescription] ++ objectTexts
-process (Get tagName) = getItem tagName
---------------
--- Location --
---------------
 
 listObjectsAt :: StateIO m => Tag -> m [Object]
 listObjectsAt tagName = do
