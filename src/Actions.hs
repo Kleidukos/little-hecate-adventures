@@ -17,11 +17,12 @@ parse ["dump"]     = Dump
 parse _            = Abort
 
 process :: StateIO m => Action -> m [Text]
-process (Dump)        = get >>= pPrint >> pure []
-process (Abort)       = pure [ "I don't know what you mean…" ]
-process (Go tagName)  = movePlayer tagName
-process (Look)        = lookAround
-process (Get tagName) = getItem tagName
+process (Go tagName)   = movePlayer tagName
+process (Look)         = lookAround
+process (Get tagName)  = getItem tagName
+process (Drop tagName) = undefined
+process (Dump)         = get >>= pPrint >> pure []
+process (Abort)        = pure [ "I don't know what you mean…" ]
 
 --------------
 -- Location --
@@ -73,7 +74,6 @@ getCurrentLocation = do
 
 setLocation :: StateIO m => Object -> Location -> m ()
 setLocation object to = do
-  AppState{..} <- get
   let tagName   = tag object
   let newObject = object{location=(Just to)}
   deleteObject tagName
@@ -114,3 +114,4 @@ moveObject :: StateIO m => Object -> Object -> m [Text]
 moveObject object to = do
   setLocation object to
   pure ["OK."]
+
